@@ -3,6 +3,7 @@
 ## [0.11.0] - estimated 2024-07
 
 - [common] Add option field to CRDs and increase version to `Session.v1beta8`, `Workspace.v1beta5` and `AppDefinition.v1beta10` [#293](https://github.com/eclipsesource/theia-cloud/pull/293) | [#55](https://github.com/eclipsesource/theia-cloud-helm/pull/55)
+- [common] Add `ingressHostnamePrefixes` list to `AppDefinition.v1beta10` [#298](https://github.com/eclipsesource/theia-cloud/pull/298) | [#57](https://github.com/eclipsesource/theia-cloud-helm/pull/57)
 
 ## [0.10.0] - 2024-04-02
 
