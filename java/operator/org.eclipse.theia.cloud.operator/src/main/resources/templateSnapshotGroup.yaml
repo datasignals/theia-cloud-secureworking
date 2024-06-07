@@ -1,0 +1,14 @@
+# This will be used as a part of creating a pod as well, this is a backup
+# I might need this "apiVersion" thing
+
+apiVersion: gemini.fairwinds.com/v1beta1
+kind: SnapshotGroup
+metadata:
+  name: placeholder-sg # name has to be ID of the student
+  namespace: placeholder-namespace-sg
+spec:
+  persistentVolumeClaim:
+    claimName: placeholder-claim-sg # same as from the storage
+  schedule:
+    - every: hour
+      keep: 2
