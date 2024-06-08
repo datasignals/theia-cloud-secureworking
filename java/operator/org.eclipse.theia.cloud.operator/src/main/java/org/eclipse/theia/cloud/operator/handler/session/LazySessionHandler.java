@@ -1,23 +1,7 @@
-/********************************************************************************
- * Copyright (C) 2022-2023 EclipseSource, Lockular, Ericsson, STMicroelectronics and 
- * others.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Eclipse Public License v. 2.0 which is available at
- * http://www.eclipse.org/legal/epl-2.0.
- *
- * This Source Code may also be made available under the following Secondary
- * Licenses when the conditions for such availability set forth in the Eclipse
- * Public License v. 2.0 are satisfied: GNU General Public License, version 2
- * with the GNU Classpath Exception which is available at
- * https://www.gnu.org/software/classpath/license.html.
- *
- * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- ********************************************************************************/
+
 package org.eclipse.theia.cloud.operator.handler.session;
 
-import static org.eclipse.theia.cloud.common.util.LogMessageUtil.formatLogMessage;
-import static org.eclipse.theia.cloud.common.util.LogMessageUtil.formatMetric;
+import static org.eclipse.theia.cloud.common.util.LogMessageUtil.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -26,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.theia.cloud.common.k8s.client.TheiaCloudClient;
@@ -75,6 +60,8 @@ public class LazySessionHandler implements SessionHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(LazySessionHandler.class);
     protected static final String USER_DATA = "user-data";
+	protected static final String USER_DATA_TOOLS = "user-data-tools";
+
 
     @Inject
     protected IngressPathProvider ingressPathProvider;
@@ -118,7 +105,6 @@ public class LazySessionHandler implements SessionHandler {
 	    return true;
 	}
 	if (OperatorStatus.HANDLING.equals(operatorStatus)) {
-	    // TODO We should not return but continue where we left off.
 	    LOGGER.warn(formatLogMessage(correlationId,
 		    "Session handling was unexpectedly interrupted before. Session is skipped now and its status is set to ERROR. Session: "
 			    + session));
@@ -241,8 +227,11 @@ public class LazySessionHandler implements SessionHandler {
 	}
 
 	Optional<String> storageName = getStorageName(session, correlationId);
+	Optional<String> storageNameTools = getStorageNameTools(session, correlationId);
+
+
 	createAndApplyDeployment(correlationId, sessionResourceName, sessionResourceUID, session, appDefinition,
-		storageName, arguments.isUseKeycloak());
+		storageName, arguments.isUseKeycloak(),storageNameTools);
 
 	/* adjust the ingress */
 	String host;
@@ -356,6 +345,26 @@ public class LazySessionHandler implements SessionHandler {
 	return Optional.of(storageName);
     }
 
+	protected Optional<String> getStorageNameTools(Session session, String correlationId) {
+		if (session.getSpec().isEphemeral()) {
+			return Optional.empty();
+		}
+		Optional<Workspace> workspace = client.workspaces().get(session.getSpec().getWorkspace());
+		if (!workspace.isPresent()) {
+			LOGGER.info(formatLogMessage(correlationId, "No workspace with name " + session.getSpec().getWorkspace()
+					+ " found for session " + session.getSpec().getName(), correlationId));
+			return Optional.empty();
+
+		}
+		String storageName = WorkspaceUtil.getStorageNameTools(workspace.get());
+		if (!client.persistentVolumeClaimsClient().has(storageName)) {
+			LOGGER.info(formatLogMessage(correlationId,
+					"No storage found for started session, will use ephemeral storage instead", correlationId));
+			return Optional.empty();
+		}
+		return Optional.of(storageName);
+	}
+
     protected Optional<Service> createAndApplyService(String correlationId, String sessionResourceName,
 	    String sessionResourceUID, Session session, AppDefinitionSpec appDefinitionSpec, boolean useOAuth2Proxy) {
 	Map<String, String> replacements = TheiaCloudServiceUtil.getServiceReplacements(client.namespace(), session,
@@ -415,7 +424,7 @@ public class LazySessionHandler implements SessionHandler {
     }
 
     protected void createAndApplyDeployment(String correlationId, String sessionResourceName, String sessionResourceUID,
-	    Session session, AppDefinition appDefinition, Optional<String> pvName, boolean useOAuth2Proxy) {
+	    Session session, AppDefinition appDefinition, Optional<String> pvName, boolean useOAuth2Proxy,  Optional<String> pvToolName) {
 	Map<String, String> replacements = deploymentReplacements.getReplacements(client.namespace(), appDefinition,
 		session);
 	String templateYaml = useOAuth2Proxy ? AddedHandlerUtil.TEMPLATE_DEPLOYMENT_YAML
@@ -431,6 +440,8 @@ public class LazySessionHandler implements SessionHandler {
 	K8sUtil.loadAndCreateDeploymentWithOwnerReference(client.kubernetes(), client.namespace(), correlationId,
 		deploymentYaml, Session.API, Session.KIND, sessionResourceName, sessionResourceUID, 0, deployment -> {
 		    pvName.ifPresent(name -> addVolumeClaim(deployment, name, appDefinition.getSpec()));
+			pvName.ifPresent(name -> addVolumeClaimTools(deployment, name, appDefinition.getSpec()));
+
 		    bandwidthLimiter.limit(deployment, appDefinition.getSpec().getDownlinkLimit(),
 			    appDefinition.getSpec().getUplinkLimit(), correlationId);
 		    AddedHandlerUtil.removeEmptyResources(deployment);
@@ -462,6 +473,41 @@ public class LazySessionHandler implements SessionHandler {
 	volumeMount.setName(USER_DATA);
 	volumeMount.setMountPath(TheiaCloudPersistentVolumeUtil.getMountPath(appDefinition));
     }
+
+	protected void addVolumeClaimTools(Deployment deployment, String pvcName, AppDefinitionSpec appDefinition) {
+		PodSpec podSpec = deployment.getSpec().getTemplate().getSpec();
+
+		String toolsVersion = appDefinition.getToolVersion();
+		if(StringUtils.isBlank(toolsVersion)) {
+			System.out.println("No tools so not creating anything");
+			return;
+		}
+
+		String pvcStaticName = toolsVersion;
+
+		System.out.println("pvcStaticName: " + pvcStaticName);
+
+		Volume volume = new Volume();
+		podSpec.getVolumes().add(volume);
+		volume.setName(USER_DATA_TOOLS);
+		PersistentVolumeClaimVolumeSource persistentVolumeClaim = new PersistentVolumeClaimVolumeSource();
+		volume.setPersistentVolumeClaim(persistentVolumeClaim);
+		persistentVolumeClaim.setClaimName(pvcStaticName);
+
+		Container theiaContainer = TheiaCloudPersistentVolumeUtil.getTheiaContainer(podSpec, appDefinition);
+
+		VolumeMount toolsVolumeMount = new VolumeMount();
+		theiaContainer.getVolumeMounts().add(toolsVolumeMount);
+		toolsVolumeMount.setName(USER_DATA_TOOLS);
+		toolsVolumeMount.setMountPath("/tools");
+		toolsVolumeMount.setSubPath("tools");
+
+		VolumeMount contribVolumeMount = new VolumeMount();
+		theiaContainer.getVolumeMounts().add(contribVolumeMount);
+		contribVolumeMount.setName(USER_DATA_TOOLS);
+		contribVolumeMount.setMountPath("/contrib");
+		contribVolumeMount.setSubPath("contrib");
+	}
 
     protected synchronized String updateIngress(Optional<Ingress> ingress, Optional<Service> serviceToUse,
 	    Session session, AppDefinition appDefinition, String correlationId) {
