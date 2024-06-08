@@ -16,11 +16,12 @@
  ********************************************************************************/
 package org.eclipse.theia.cloud.service;
 
-import static org.eclipse.theia.cloud.common.util.WorkspaceUtil.getSessionName;
+import static org.eclipse.theia.cloud.common.util.WorkspaceUtil.*;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.theia.cloud.common.k8s.client.DefaultTheiaCloudClient;
@@ -47,8 +48,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
 public final class K8sUtil {
-    private NamespacedKubernetesClient KUBERNETES = CustomResourceUtil.createClient();
-    private TheiaCloudClient CLIENT = new DefaultTheiaCloudClient(KUBERNETES);
+    private static NamespacedKubernetesClient KUBERNETES = CustomResourceUtil.createClient();
+    private static TheiaCloudClient CLIENT = new DefaultTheiaCloudClient(KUBERNETES);
 
     public Workspace createWorkspace(String correlationId, UserWorkspace data) {
 	WorkspaceSpec spec = new WorkspaceSpec(data.name, data.label, data.appDefinition, data.user);
@@ -62,6 +63,12 @@ public final class K8sUtil {
 	    return false;
 	}
 	return true;
+    }
+
+	public static Workspace editWorkspace(String correlationId, String workspaceName, Consumer<Workspace> data) {
+        Workspace workspace = CLIENT.workspaces().edit(correlationId, workspaceName, data);
+        return workspace;
+//        return CLIENT.workspaces().edit(correlationId, workspaceName, data);
     }
 
     public List<SessionSpec> listSessions(String user) {
