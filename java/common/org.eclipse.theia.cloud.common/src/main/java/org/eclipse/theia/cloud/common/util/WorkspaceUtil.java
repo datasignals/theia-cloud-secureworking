@@ -15,7 +15,7 @@
  ********************************************************************************/
 package org.eclipse.theia.cloud.common.util;
 
-import static org.eclipse.theia.cloud.common.util.NamingUtil.asValidName;
+import static org.eclipse.theia.cloud.common.util.NamingUtil.*;
 
 import java.time.Instant;
 
@@ -25,6 +25,8 @@ public final class WorkspaceUtil {
     private static final String SESSION_SUFFIX = "-session";
     private static final String STORAGE_SUFFIX = "pvc";
     private static final String WORKSPACE_PREFIX = "ws-";
+    private static final String STORAGE_SUFFIX_TOOLS = "pvc-tools";
+
     private static final int WORKSPACE_NAME_LIMIT = NamingUtil.VALID_NAME_LIMIT - SESSION_SUFFIX.length();
 
     private WorkspaceUtil() {
@@ -53,6 +55,10 @@ public final class WorkspaceUtil {
 
     public static String getStorageName(Workspace workspace) {
 	return NamingUtil.createName(workspace, STORAGE_SUFFIX);
+    }
+
+    public static String getStorageNameTools(Workspace workspace) {
+        return NamingUtil.createName(workspace, STORAGE_SUFFIX_TOOLS);
     }
 
     public static String generateWorkspaceLabel(String user, String appDefinitionName) {

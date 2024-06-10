@@ -83,6 +83,9 @@ public class AppDefinitionSpec {
     @JsonProperty("options")
     private Map<String, String> options;
 
+	@JsonProperty("toolVersion")
+    private String toolVersion;
+
     /**
      * Default constructor.
      */
@@ -200,6 +203,11 @@ public class AppDefinitionSpec {
     public Map<String, String> getOptions() {
 	return options;
     }
+
+	public String getToolVersion() {
+        return toolVersion;
+    }
+
 
     @Override
     public String toString() {
