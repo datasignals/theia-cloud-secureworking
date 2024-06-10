@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="200" height="50" viewBox="0 0 200 50">
+  <defs>
+    <clipPath id="clip-path">
+      <rect id="Rectangle_20" data-name="Rectangle 20" width="200" height="50" transform="translate(78 25)" fill="#fff" stroke="#707070" stroke-width="1"/>
+    </clipPath>
+  </defs>
+  <g id="lockular_logo" transform="translate(-78 -25)" clip-path="url(#clip-path)">
+    <g id="Group_44" data-name="Group 44" transform="translate(-537.098 -662.281)">
+      <g id="Group_40" data-name="Group 40" transform="translate(620.279 689.56)">
+        <path id="Path_57" data-name="Path 57" d="M-18487.953-3588.065h30.449v30.59l-15.131,14.853h-30.182v-30.723Zm28.867,1.581h-28.217l-13.932,13.8v28.483h27.949l14.2-13.935Z" transform="translate(18502.816 3588.065)" fill="#fff" stroke="#fff" stroke-width="0.5"/>
+        <path id="Rectangle_14" data-name="Rectangle 14" d="M1.581,1.581v13.1h12.65V1.581H1.581M0,0H15.813V16.265H0Z" transform="translate(14.64 14.698)" fill="#fff" stroke="#fff" stroke-width="0.5"/>
+        <path id="Path_58" data-name="Path 58" d="M-18436.475-3212.6h-1.584v-15.026h1.584Z" transform="translate(18452.688 3227.729)" fill="#fff" stroke="#fff" stroke-width="0.5"/>
+        <path id="Path_59" data-name="Path 59" d="M-18436.475-3212.6h-1.584v-15.026h1.584Z" transform="translate(18466.918 3257.257)" fill="#fff" stroke="#fff" stroke-width="0.5"/>
+      </g>
+      <text id="Lockular_" data-name="Lockular " transform="translate(682.097 719.51)" fill="#fff" font-size="30" font-family="SegoeUI, Segoe UI" letter-spacing="0.03em"><tspan x="0" y="0">Lockular </tspan></text>
+    </g>
+  </g>
+</svg>

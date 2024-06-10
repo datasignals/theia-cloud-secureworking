@@ -1,0 +1,25 @@
+# Use the official Node.js image as the base image
+FROM node:gallium-alpine3.16
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json (or yarn.lock)
+COPY node/react-landing-page/package*.json ./landing-page/
+
+# Change the working directory to landing-page
+WORKDIR /app/landing-page
+
+# Install dependencies
+RUN npm install  
+
+# Copy the rest of the application code
+COPY node/react-landing-page/. ./
+
+COPY node/react-landing-page/src/assets/images /app/landing-page/assets/images
+
+# Expose the port the app runs on
+EXPOSE 4173
+
+# Command to run at container start-up that compiles and starts the application
+CMD ["sh", "-c", "yarn build && npm run dev"]
